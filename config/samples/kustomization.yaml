@@ -1,0 +1,4 @@
+## Append samples of your project ##
+resources:
+- eswitchconfig_v1_eswitch.yaml
+# +kubebuilder:scaffold:manifestskustomizesamples
