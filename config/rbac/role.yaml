@@ -1,0 +1,32 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: manager-role
+rules:
+- apiGroups:
+  - eswitchconfig.kube-vm.io
+  resources:
+  - eswitches
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - eswitchconfig.kube-vm.io
+  resources:
+  - eswitches/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - eswitchconfig.kube-vm.io
+  resources:
+  - eswitches/status
+  verbs:
+  - get
+  - patch
+  - update

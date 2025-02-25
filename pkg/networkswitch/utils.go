@@ -1,0 +1,122 @@
+package networkswitch
+
+import (
+	"encoding/binary"
+	"net"
+	"net/netip"
+)
+
+func ip2int(ip net.IP) uint32 {
+	// if len(ip) == 16 {
+	// 	panic("no sane way to convert ipv6 into uint32")
+	// }
+	return binary.BigEndian.Uint32(ip)
+}
+
+func int2ip(nn uint32) net.IP {
+	ip := make(net.IP, 4)
+	binary.BigEndian.PutUint32(ip, nn)
+	return ip
+}
+
+func int2netip(nn uint32) (addr netip.Addr, ok bool) {
+	ipBytes := make([]byte, 4)
+	binary.BigEndian.PutUint32(ipBytes, nn)
+	addr, ok = netip.AddrFromSlice(ipBytes)
+	return
+}
+
+func extractDstMac(frame *[]byte) net.HardwareAddr {
+	return net.HardwareAddr((*frame)[0:6])
+}
+
+func extractSrcMac(frame *[]byte) net.HardwareAddr {
+	return net.HardwareAddr((*frame)[6:12])
+}
+
+func sliceRepeat[T any](size int, v T) []T {
+	retval := make([]T, 0, size)
+	for i := 0; i < size; i++ {
+		retval = append(retval, v)
+	}
+	return retval
+}
+
+func divmod(numerator, denominator int64) (quotient, remainder int64) {
+	quotient = numerator / denominator // integer division, decimals are truncated
+	remainder = numerator % denominator
+	return
+}
+
+func bitmaskVlanList64(vlans []uint16) [64]uint64 {
+	var out [64]uint64
+	for _, vlan := range vlans {
+		vlan64 := uint64(vlan)
+
+		section := vlan64 / 64 // integer division, decimals are truncated
+		offset := vlan64 % 64  // decimal offset in range 0-63
+		offsetBitmask := uint64(1) << offset
+
+		out[section] = out[section] | offsetBitmask
+	}
+
+	return out
+}
+
+func bitmaskVlanList32(vlans []uint16) [128]uint32 {
+	var out [128]uint32
+	for _, vlan := range vlans {
+		vlan32 := uint32(vlan)
+
+		section := vlan32 / 32 // integer division, decimals are truncated
+		offset := vlan32 % 32  // decimal offset in range 0-127
+		offsetBitmask := uint32(1) << offset
+
+		out[section] = out[section] | offsetBitmask
+	}
+
+	return out
+}
+
+func bitmaskVlanList16(vlans []uint16) [256]uint16 {
+	out := [256]uint16{}
+	for _, vlan := range vlans {
+		section := vlan / 16 // integer division, decimals are truncated
+		offset := vlan % 16  // decimal offset in range 0-255
+		offsetBitmask := uint16(1) << offset
+
+		out[section] = out[section] | offsetBitmask
+	}
+
+	return out
+}
+
+func bitmaskAllVlans16(exclude []uint16) [256]uint16 {
+	out := ALL_VLANS_BITMASK_16
+	for _, vlan := range exclude {
+		section := vlan / 16 // integer division, decimals are truncated
+		offset := vlan % 16  // decimal offset in range 0-255
+		offsetBitmask := uint16(1) << offset
+
+		out[section] = out[section] ^ offsetBitmask
+	}
+
+	return out
+}
+
+func bitmaskAllVlans64(exclude []uint16) [64]uint64 {
+
+	out := ALL_VLANS_BITMASK_64
+	for _, vlan := range exclude {
+		section := vlan / 64 // integer division, decimals are truncated
+		offset := vlan % 64  // decimal offset in range 0-255
+		offsetBitmask := uint64(1) << offset
+		out[section] = out[section] ^ offsetBitmask
+	}
+
+	return out
+}
+
+var ALL_VLANS_BITMASK_64 [64]uint64 = [64]uint64{18446744073709551614, 18446744073709551615, 18446744073709551615, 18446744073709551615, 18446744073709551615, 18446744073709551615, 18446744073709551615, 18446744073709551615, 18446744073709551615, 18446744073709551615, 18446744073709551615, 18446744073709551615, 18446744073709551615, 18446744073709551615, 18446744073709551615, 18446744073709551615, 18446744073709551615, 18446744073709551615, 18446744073709551615, 18446744073709551615, 18446744073709551615, 18446744073709551615, 18446744073709551615, 18446744073709551615, 18446744073709551615, 18446744073709551615, 18446744073709551615, 18446744073709551615, 18446744073709551615, 18446744073709551615, 18446744073709551615, 18446744073709551615, 18446744073709551615, 18446744073709551615, 18446744073709551615, 18446744073709551615, 18446744073709551615, 18446744073709551615, 18446744073709551615, 18446744073709551615, 18446744073709551615, 18446744073709551615, 18446744073709551615, 18446744073709551615, 18446744073709551615, 18446744073709551615, 18446744073709551615, 18446744073709551615, 18446744073709551615, 18446744073709551615, 18446744073709551615, 18446744073709551615, 18446744073709551615, 18446744073709551615, 18446744073709551615, 18446744073709551615, 18446744073709551615, 18446744073709551615, 18446744073709551615, 18446744073709551615, 18446744073709551615, 18446744073709551615, 18446744073709551615, 9223372036854775807}
+
+var ALL_VLANS_BITMASK_16 [256]uint16 = [256]uint16{65534, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 32767}
